@@ -1,37 +1,39 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description:
 
 Parameters:
-  PraefectLbSecurityGroupId:
-    Description: Id of the PraefectLb Security Group
-    Type: AWS::EC2::SecurityGroup::Id
-
   RailsLbSecurityGroupId:
     Description: Id of the RailsLb Security Group
     Type: AWS::EC2::SecurityGroup::Id
 
-  LbSubnet1:
+  PraefectLbSubnet1:
     Description: SubnetId for the ALB
     Type: AWS::EC2::Subnet::Id
 
-  LbSubnet2:
+  PraefectLbSubnet2:
+    Description: SubnetId for the ALB
+    Type: AWS::EC2::Subnet::Id
+
+  RailsLbSubnet1:
+    Description: SubnetId for the ALB
+    Type: AWS::EC2::Subnet::Id
+
+  RailsLbSubnet2:
     Description: SubnetId for the ALB
     Type: AWS::EC2::Subnet::Id
 
   VpcId:
     Description: VPC ID
-    Type: String
+    Type: AWS::EC2::VPC::Id
 
 Resources:
   PraefectLb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
+      Type: network
       Scheme: internal
-      SecurityGroups:
-        - !Ref PraefectLbSecurityGroupId
       Subnets:
-        - !Ref LbSubnet1
-        - !Ref LbSubnet2
+        - !Ref PraefectLbSubnet1
+        - !Ref PraefectLbSubnet2
 
   RailsLb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -40,8 +42,8 @@ Resources:
       SecurityGroups:
         - !Ref RailsLbSecurityGroupId
       Subnets:
-        - !Ref LbSubnet1
-        - !Ref LbSubnet2
+        - !Ref RailsLbSubnet1
+        - !Ref RailsLbSubnet2
 
   PraefectTg:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
