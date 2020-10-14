@@ -58,7 +58,7 @@ Resources:
       # Matcher:
       #   Matcher
       Port: 2305
-      Protocol: tcp
+      Protocol: TCP
       TargetType: instance
       # UnhealthyThresholdCount: Integer
       VpcId: !Ref VpcId
@@ -76,7 +76,7 @@ Resources:
       # Matcher:
       #   Matcher
       Port: 80
-      Protocol: tcp
+      Protocol: TCP
       TargetType: instance
       # UnhealthyThresholdCount: Integer
       VpcId: !Ref VpcId
@@ -89,7 +89,7 @@ Resources:
           Type: forward
       LoadBalancerArn: !Ref PraefectLb
       Port: 2305
-      Protocol: tcp
+      Protocol: TCP
 
   RailsListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -99,4 +99,4 @@ Resources:
           Type: forward
       LoadBalancerArn: !Ref RailsLb
       Port: 80
-      Protocol: tcp
+      Protocol: HTTP
