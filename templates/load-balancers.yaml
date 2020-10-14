@@ -76,7 +76,7 @@ Resources:
       # Matcher:
       #   Matcher
       Port: 80
-      Protocol: TCP
+      Protocol: HTTP
       TargetType: instance
       # UnhealthyThresholdCount: Integer
       VpcId: !Ref VpcId
