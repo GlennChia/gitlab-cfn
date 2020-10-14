@@ -1,0 +1,125 @@
+Transform: AWS::SecretsManager-2020-07-23
+
+Description: GitLab RDS
+
+Parameters:
+  DBName:
+    Default: gitlab
+    Description: The database name
+    Type: String
+    MinLength: "1"
+    MaxLength: "64"
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+
+  DBAllocatedStorage:
+    Type: Number
+    Default: 5
+    Description: The size of the database (Gb)
+    MinValue: 5
+    MaxValue: 1024
+    ConstraintDescription: must be between 5 and 1024Gb.
+
+  DBInstanceClass:
+    Description: The database instance type
+    Type: String
+    Default: db.m5.large
+    AllowedValues:
+      - db.t3.micro
+      - db.t3.small
+      - db.t3.medium
+      - db.m5.large
+      - db.m5.xlarge
+      - db.m5.2xlarge
+      - db.m5.4xlarge
+    ConstraintDescription: must select a valid database instance type.
+
+  DBSecurityGroupId:
+    Description: The ID of the DB Security Group
+    Type: AWS::EC2::SecurityGroup::Id
+
+  DBSubnet1:
+    Description: SubnetId for the DB
+    Type: AWS::EC2::Subnet::Id
+
+  DBSubnet2:
+    Description: SubnetId for the DB
+    Type: AWS::EC2::Subnet::Id
+
+  DBMasterUsername:
+    Description: "Master Username for DB"
+    Type: String
+    Default: pgadmin
+    MinLength: "1"
+    MaxLength: "64"
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+
+  MultiAZ:
+    Description: Create a multi AZ database
+    Default: true
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Either true or false
+
+Resources:
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref DBName
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass: !Ref DBInstanceClass
+      Engine: postgres
+      EngineVersion: "12.4"
+      CopyTagsToSnapshot: true
+      StorageEncrypted: true
+      MasterUsername: !Sub '{{resolve:secretsmanager:${DBMasterUserSecret}::username}}'
+      MasterUserPassword: !Sub '{{resolve:secretsmanager:${DBMasterUserSecret}::password}}'
+      VPCSecurityGroups:
+        - !Ref DBSecurityGroupId
+      BackupRetentionPeriod: 7
+      DBParameterGroupName: !Ref DBParamGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+      AutoMinorVersionUpgrade: false
+      MultiAZ: !Ref MultiAZ
+      DeletionProtection: true
+      Tags:
+        - Key: Name
+          Value: GitLab RDS
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: gitlab-rds-group
+      DBSubnetGroupDescription: GitLab RDS Group
+      SubnetIds:
+        - !Ref DBSubnet1
+        - !Ref DBSubnet2
+
+  DBMasterUserSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: 'RDS Secret'
+      GenerateSecretString:
+        SecretStringTemplate: !Sub '{"username": "${DBMasterUsername}"}'
+        GenerateStringKey: 'password'
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+      Tags:
+        - Key: Name
+          Value: gitlab-rds-master-password
+
+  SecretRDSInstanceAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId: !Ref DBMasterUserSecret
+      TargetId: !Ref DBInstance
+      TargetType: AWS::RDS::DBInstance
+
+  DBParamGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Description: GitLabDB Parameter Group
+      Family: postgres12

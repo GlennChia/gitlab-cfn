@@ -1,0 +1,89 @@
+Description: GitLab Security Groups
+
+Parameters:
+  VpcId:
+    Description: VPC ID
+    Type: String
+
+Resources: 
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: GitLabDB Security Group
+      VpcId: !Ref VpcId
+      GroupName: GitLabDB-SecurityGroup
+      SecurityGroupIngress:
+        - Description: 'Traffic from the GitLab Instances'
+          SourceSecurityGroupId: !Ref AppSecurityGroup
+          FromPort: 5432
+          ToPort: 5432
+          IpProtocol: 'tcp'
+
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: GitLab Redis (Elasticache) Security Group
+      VpcId: !Ref VpcId
+      GroupName: GitLabRedis-SecurityGroup
+      SecurityGroupIngress:
+        - Description: 'Traffic from the GitLab Instances'
+          SourceSecurityGroupId: !Ref AppSecurityGroup
+          FromPort: 6379
+          ToPort: 6379
+          IpProtocol: 'tcp'
+
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: GitLab Security Group
+      VpcId: !Ref VpcId
+      GroupName: GitLab-SecurityGroup
+      SecurityGroupIngress:
+        - Description: 'Traffic from GitLab Load Balancer'
+          SourceSecurityGroupId: !Ref LBSecurityGroup
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: 'tcp'
+  
+  LBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: GitLab LB Security Group
+      VpcId: !Ref VpcId
+      GroupName: GitLabLB-SecurityGroup
+      SecurityGroupIngress:
+        - Description: 'HTTPS'
+          CidrIp: '0.0.0.0/0'
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: 'tcp'
+        - Description: 'HTTP'
+          CidrIp: '0.0.0.0/0'
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: 'tcp'
+
+Outputs:
+  GitLabSecurityGroupId:
+    Description: 'GitLab Security Group Id'
+    Value: !Ref AppSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-AppSecurityGroup'
+
+  GitLabDBSecurityGroupId:
+    Description: 'GitLab DB Security Group Id'
+    Value: !Ref DBSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-DBSecurityGroup'
+
+  GitLabLBSecurityGroupId:
+    Description: 'GitLab DB Security Group Id'
+    Value: !Ref LBSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-LBSecurityGroup'
+
+  GitLabRedisSecurityGroupId:
+    Description: 'GitLab Redis Security Group Id'
+    Value: !Ref RedisSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-RedisSecurityGroup'

@@ -1,0 +1,79 @@
+Description: GitLab Redis
+
+Parameters:
+
+  CacheNodeType:
+    Description: The Redis Node Type
+    Type: String
+    Default: cache.m5.large
+    AllowedValues:
+      - cache.t3.small
+      - cache.t3.medium
+      - cache.m5.large
+      - cache.m5.xlarge
+      - cache.m5.2xlarge
+      - cache.m5.4xlarge
+      - cache.r5.large
+      - cache.r5.xlarge
+      - cache.r5.2xlarge
+      - cache.r5.4xlarge
+
+  NumCacheClusters:
+    Description: Number of Redis Cache Clusters. Only used if MultiAZ Enabled (else will be 1)
+    Type: Number
+    Default: 2
+    MinValue: 2
+    MaxValue: 6
+
+  RedisSecurityGroupId:
+    Description: Id of the Redis Security Group
+    Type: AWS::EC2::SecurityGroup::Id
+
+  CacheSubnet1:
+    Description: SubnetId for the Cache
+    Type: AWS::EC2::Subnet::Id
+
+  CacheSubnet2:
+    Description: SubnetId for the Cache
+    Type: AWS::EC2::Subnet::Id
+
+  MultiAZ:
+    Description: MultiAZ Enabled
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Either true or false
+
+Conditions:
+  isMultiAZ: !Equals [!Ref MultiAZ, true]
+
+Resources:
+  RedisCluster:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupDescription: GitLab Redis
+      AtRestEncryptionEnabled: true
+      AutomaticFailoverEnabled: !If [isMultiAZ, true, false]
+      AuthToken: redispassword12345
+      CacheParameterGroupName: default.redis6.x
+      CacheNodeType: !Ref CacheNodeType
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      Engine: redis
+      EngineVersion: 6.x
+      NumCacheClusters: !If [isMultiAZ, !Ref NumCacheClusters, 1] 
+      SecurityGroupIds:
+        - !Ref RedisSecurityGroupId
+      TransitEncryptionEnabled: true
+      SnapshotRetentionLimit: 1
+      SnapshotWindow: '16:00-18:00'
+
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: GitLab Redis Subnet Group
+      CacheSubnetGroupName: gitlab-redis-subnet-group
+      SubnetIds:
+        - !Ref CacheSubnet1
+        - !Ref CacheSubnet2
