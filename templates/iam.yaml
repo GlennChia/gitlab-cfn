@@ -1,10 +1,14 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description:
+
+Parameters:
+  Prefix:
+    Type: String
+
 Resources:
-  Policy:
+  RailsPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyDocument: |
+      PolicyDocument: !Sub |
         {
             "Version": "2012-10-17",
             "Statement": [
@@ -16,7 +20,7 @@ Resources:
                         "s3:DeleteObject",
                         "s3:PutObjectAcl"
                     ],
-                    "Resource": "arn:aws:s3:::gl-*/*"
+                    "Resource": "arn:aws:s3:::${Prefix}-*/*"
                 },
                 {
                     "Effect": "Allow",
@@ -26,11 +30,11 @@ Resources:
                         "s3:ListMultipartUploadParts",
                         "s3:ListBucketMultipartUploads"
                     ],
-                    "Resource": "arn:aws:s3:::gl-*"
+                    "Resource": "arn:aws:s3:::${Prefix}-*"
                 }
             ]
         }
-      PolicyName: mcc-gitlab-rails-policy
+      PolicyName: !Sub ${Prefix}-rails-policy
       Roles:
         - !Ref RailsRole
 
@@ -50,4 +54,4 @@ Resources:
             }
           ]
         }
-      RoleName: mcc-gitlab-rails-role
+      RoleName: !Sub ${Prefix}-rails-role
