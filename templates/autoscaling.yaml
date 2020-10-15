@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  Prefix:
+    Type: String
+    Description: Styling string to enforce naming conventions
+
+  RailsImage:
+    Type: AWS::EC2::Image::Id
+    Description: AMI ID of the configured GitLab instance
+
+  RailsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Id of the Rails Security Group
+
+  InstanceSize:
+    Type: String
+    Default: m5.large
+    AllowedValues:
+      - t3.medium
+      - t3.large
+      - m5.large
+      - m5.xlarge
+      - c5.large
+      - c5.xlarge
+
+  Subnet1:
+    Type: AWS::EC2::Subnet::Id
+    Description: SubnetId for the instances    
+
+  Subnet2:
+    Type: AWS::EC2::Subnet::Id
+    Description: SubnetId for the instances    
+
+  TargetGroupArn:
+    Type: String
+    Description: Target Group ARN of Rails TG
+    
+  IamInstanceProfile:
+    Type: String
+    Description: IAM instance profile attached to the rails instances
+
+Resources:
+  AutoScaleGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+      AutoScalingScheduledAction:
+        IgnoreUnmodifiedGroupSizeProperties: true
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 2
+        SuspendProcesses:
+          - ReplaceUnhealthy
+          - AZRebalance
+          - ScheduledActions
+          - AlarmNotification
+    Properties:
+      DesiredCapacity: "2"
+      HealthCheckGracePeriod: 300
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      TargetGroupARNs:
+        - !Ref TargetGroupArn
+      MaxSize: "2"
+      MetricsCollection:
+        - Granularity: 1Minute
+      MinSize: "2"
+      VPCZoneIdentifier:
+        - !Ref Subnet1
+        - !Ref Subnet2
+      Tags:
+        - Key: Name
+          Value: GitLab Rails Instance
+          PropagateAtLaunch: true
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub ${Prefix}-rails-launch-template
+      LaunchTemplateData:
+        IamInstanceProfile:
+          Arn: !Ref IamInstanceProfile
+        ImageId: !Ref RailsImage
+        Monitoring:
+          Enabled: true
+        InstanceType: !Ref InstanceSize
+        SecurityGroupIds:
+          - !Ref RailsSecurityGroupId
