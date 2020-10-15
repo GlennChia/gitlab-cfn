@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  RailsImage:
+    Type: AWS::EC2::Image::Id
+    Description: Required
+
+  RailsSecurityGroupId:
+    Description: Id of the RailsLb Security Group
+    Type: AWS::EC2::SecurityGroup::Id
+
+  InstanceSize:
+    Type: String
+    Default: m5.large
+    AllowedValues:
+      - t3.medium
+      - t3.large
+      - m5.large
+      - m5.xlarge
+      - c5.large
+      - c5.xlarge
+
+  Subnet1:
+    Description: SubnetId for the ALB
+    Type: AWS::EC2::Subnet::Id
+
+  Subnet2:
+    Description: SubnetId for the ALB
+    Type: AWS::EC2::Subnet::Id
+
+  TargetGroupArn:
+    Description: Target Group ARN of Rails TG
+    Type: String
+
+  IamInstanceProfile:
+    Type: String
+
+Resources:
+  AutoScaleGroup:
+    UpdatePolicy:
+      AutoScalingScheduledAction:
+        IgnoreUnmodifiedGroupSizeProperties: true
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 2
+        SuspendProcesses:
+          - ReplaceUnhealthy
+          - AZRebalance
+          - ScheduledActions
+          - AlarmNotification
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: "2"
+      HealthCheckGracePeriod: 300
+      LaunchConfigurationName: !Ref LaunchConfig
+      TargetGroupARNs:
+        - !Ref TargetGroupArn
+      MaxSize: "2"
+      MetricsCollection:
+        - Granularity: 1Minute
+      MinSize: "2"
+      VPCZoneIdentifier:
+        - !Ref Subnet1
+        - !Ref Subnet2
+      Tags:
+        - Key: Name
+          Value: GitLab Rails Instance
+          PropagateAtLaunch: true
+
+  LaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      IamInstanceProfile: !Ref IamInstanceProfile
+      ImageId: !Ref RailsImage
+      InstanceMonitoring: true
+      InstanceType: !Ref InstanceSize
+      SecurityGroups:
+        - !Ref RailsSecurityGroupId
