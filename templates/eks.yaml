@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  Prefix:
+    Type: String
+
+  Subnet1:
+    Type: AWS::EC2::Subnet::Id
+    Description: SubnetId for EKS. This has to be in a different AZ from subnet 2.
+    
+  Subnet2:
+    Type: AWS::EC2::Subnet::Id
+    Description: SubnetId for EKS. This has to be in a different AZ from subnet 2.
+      
+  SecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Id of the EKS Security Group. This ia an additional security group to the one created by EKS.
+    
+  EKSClusterIamRoleArn:
+    Type: String
+    Description: IAM Role ARN to associate with EKS instance
+    
+  InstanceTypes:
+    Type: String
+    Description: The instance type to use for your node group
+    Default: t3.medium
+    AllowedValues:
+      - t3.medium
+      - t3.large
+      - m5.large
+      - m5.xlarge
+      - c5.large
+      - c5.xlarge
+
+  EKSNodeGroupIamRoleArn:
+    Type: String
+    Description: IAM Role ARN to associate with EKS node group
+    
+Resources:
+  EksCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Sub ${Prefix}-eks
+      Version: '1.17'
+      RoleArn: !Ref EKSClusterIamRoleArn
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref SecurityGroupId
+        SubnetIds:
+          - !Ref Subnet1
+          - !Ref Subnet2
+  EKSNodeGroup:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      ClusterName: !Ref EksCluster
+      InstanceTypes:
+        - !Ref InstanceTypes
+      NodeRole: !Ref EKSNodeGroupIamRoleArn
+      Subnets:
+        - !Ref Subnet1
+        - !Ref Subnet2
+      Version: '1.17'
+      ScalingConfig:
+        DesiredSize: 2
+        MaxSize: 4
+        MinSize: 2
