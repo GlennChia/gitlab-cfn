@@ -123,7 +123,3 @@ Resources:
     Properties:
       Description: GitLabDB Parameter Group
       Family: postgres11
-      Parameters:
-        server_encoding: utf-8
-        default_with_oids: '0'
-        syslog_facility: local0
