@@ -71,7 +71,7 @@ Resources:
       AllocatedStorage: !Ref DBAllocatedStorage
       DBInstanceClass: !Ref DBInstanceClass
       Engine: postgres
-      EngineVersion: "12.4"
+      EngineVersion: "11.9"
       CopyTagsToSnapshot: true
       StorageEncrypted: true
       MasterUsername: !Sub '{{resolve:secretsmanager:${DBMasterUserSecret}::username}}'
@@ -122,4 +122,8 @@ Resources:
     Type: AWS::RDS::DBParameterGroup
     Properties:
       Description: GitLabDB Parameter Group
-      Family: postgres12
+      Family: postgres11
+      Parameters:
+        server_encoding: utf-8
+        default_with_oids: '0'
+        syslog_facility: local0
