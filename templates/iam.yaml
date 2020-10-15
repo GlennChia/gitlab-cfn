@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  Prefix:
+    Type: String
+
+Resources:
+  RailsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument: !Sub |
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:PutObject",
+                        "s3:GetObject",
+                        "s3:DeleteObject",
+                        "s3:PutObjectAcl"
+                    ],
+                    "Resource": "arn:aws:s3:::${Prefix}-*/*"
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:ListBucket",
+                        "s3:AbortMultipartUpload",
+                        "s3:ListMultipartUploadParts",
+                        "s3:ListBucketMultipartUploads"
+                    ],
+                    "Resource": "arn:aws:s3:::${Prefix}-*"
+                }
+            ]
+        }
+      PolicyName: !Sub ${Prefix}-rails-policy
+      Roles:
+        - !Ref RailsRole
+
+  RailsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      RoleName: !Sub ${Prefix}-rails-role
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  GeneralRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      RoleName: !Sub ${Prefix}-general-role
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
